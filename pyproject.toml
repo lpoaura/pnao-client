@@ -1,0 +1,32 @@
+
+[tool.poetry]
+name = "pnao-client"
+version = "0.1.0"
+description = "Client PNAO for PostgreSQL"
+authors = ["lpofredc <frederic.cloitre@lpo.fr>"]
+maintainers = ["lpofredc <frederic.cloitre@lpo.fr>"]
+packages = [{ include = "pnao_client" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.32"
+sqlalchemy = "^2.0"
+psycopg2-binary = "^2.9"
+alembic = "^1.13"
+python-dotenv = "^1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^4.1"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.2"
+myst-parser = "^2.0"
+sphinx-rtd-theme = "^2.0"
+
+[tool.poetry.scripts]
+pnao = "pnao_client.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
