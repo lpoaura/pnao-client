@@ -1,6 +1,6 @@
-
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 PNAO_BASE_URL = os.getenv("PNAO_BASE_URL", "https://pnao.geomatika.fr/v6")

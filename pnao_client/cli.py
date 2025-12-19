@@ -1,9 +1,9 @@
-
 import argparse
 from .api import PnaoApiClient
 from .database import DatabaseClient
 from .downloader import PnaoDownloader
 from .config import PNAO_USERNAME, PNAO_PASSWORD
+
 
 def main():
     parser = argparse.ArgumentParser("pnao")

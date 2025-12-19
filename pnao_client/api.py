@@ -1,9 +1,9 @@
-
 import logging
 import time, requests
 from .config import PNAO_BASE_URL
 
 logger = logging.getLogger(__name__)
+
 
 class PnaoApiClient:
     def __init__(self, username, password):

@@ -1,8 +1,8 @@
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from .models import PnaoRawData
 from .config import DATABASE_URL, DB_SCHEMA
+
 
 class DatabaseClient:
     def __init__(self):

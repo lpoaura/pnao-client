@@ -1,6 +1,6 @@
-
 from .api import PnaoApiClient
 from .database import DatabaseClient
+
 
 class PnaoDownloader:
     def __init__(self, api: PnaoApiClient, db: DatabaseClient):
