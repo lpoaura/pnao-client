@@ -34,7 +34,7 @@ jobs:
           version = tomllib.loads(Path("pyproject.toml").read_text())["tool"]["poetry"]["version"]
           if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", tag):
               raise SystemExit("Expected a stable release tag: X.Y.Z")
-          if tag != f"v{version}":
+          if tag != version:
               raise SystemExit(f"Tag {tag} does not match package version {version}")
           PYTHON
 
