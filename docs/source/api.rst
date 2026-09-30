@@ -1,7 +1,20 @@
 API
 ===
 
-.. automodule:: pnao_client
+Client HTTP
+----------
+
+.. automodule:: pnao_client.api
    :members:
 
-```{autodoc} pnao_client.api.PnaoApiClient```
+Téléchargement
+--------------
+
+.. automodule:: pnao_client.downloader
+   :members:
+
+Base de données
+---------------
+
+.. automodule:: pnao_client.database
+   :members:

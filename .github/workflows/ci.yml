@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pipx install poetry==2.3.2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: poetry
+      - run: poetry install --only main,dev --no-interaction
+      - run: poetry check --lock
+      - run: poetry run ruff check .
+      - run: poetry run ruff format --check .
+
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        run: pipx install poetry==2.3.2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: poetry
+      - run: poetry install --only main,dev --no-interaction
+      - name: Unit tests and coverage
+        run: >-
+          poetry run pytest --cov=pnao_client --cov-branch
+          --cov-report=term-missing --cov-report=xml
+          --cov-fail-under=100 --junitxml=junit.xml
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            junit.xml
+          if-no-files-found: warn
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pipx install poetry==2.3.2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: poetry
+      - run: poetry build
+      - name: Check distribution metadata
+        run: pipx run --spec twine==6.2.0 twine check --strict dist/*
+      - name: Test installed wheel outside the source tree
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/wheel-test"
+          "$RUNNER_TEMP/wheel-test/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/wheel-test/bin/pnao" --help
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/*
+          if-no-files-found: error
