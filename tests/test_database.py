@@ -17,9 +17,9 @@ def client(monkeypatch):
     return client
 
 
-def test_ensure_schema_uses_transaction(client, monkeypatch):
+def test_ensure_database_requirements_uses_transaction(client, monkeypatch):
     monkeypatch.setattr(database, "DB_SCHEMA", "unit_test")
-    client.ensure_schema()
+    client.ensure_database_requirements()
     client.engine.begin.assert_called_once_with()
     connection = client.engine.begin.return_value.__enter__.return_value
     assert [str(call.args[0]) for call in connection.execute.call_args_list] == [

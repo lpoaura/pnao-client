@@ -1,3 +1,5 @@
+"""Modèles SQLAlchemy des données brutes importées depuis PNAO."""
+
 from sqlalchemy import DateTime, Index, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -6,11 +8,25 @@ from .config import DB_SCHEMA
 
 
 class Base(DeclarativeBase):
+    """Base déclarative abstraite des modèles SQLAlchemy du schéma PNAO."""
+
     __abstract__ = True
     __table_args__ = {"schema": DB_SCHEMA}
 
 
 class PnaoRawData(Base):
+    """Enregistrement d'un élément d'export dans la table ``raw_data``.
+
+    La table appartient au schéma ``DB_SCHEMA``. Un index sur ``source`` et un
+    index GIN sur ``payload`` facilitent les recherches dans les données brutes.
+
+    :ivar id: Clé primaire entière de l'enregistrement.
+    :ivar source: Nom de l'export d'origine, limité à 50 caractères.
+    :ivar payload: Données brutes stockées au format PostgreSQL JSONB.
+    :ivar created_at: Horodatage avec fuseau horaire, défini par PostgreSQL lors
+        de l'insertion.
+    """
+
     __tablename__ = "raw_data"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     source: Mapped[str] = mapped_column(String(50), index=True)

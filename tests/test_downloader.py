@@ -18,7 +18,7 @@ def test_fetch_all_initializes_schema_and_imports_only_core_areas(areas):
     PnaoDownloader(api, db).fetch_all()
 
     assert events.mock_calls == [
-        call.db.ensure_schema(),
+        call.db.ensure_database_requirements(),
         call.api.export_zsm_coeur(),
     ] + [call.db.insert("zsm_coeur", area) for area in areas]
     api.export_zsm_tampon.assert_not_called()
@@ -29,7 +29,7 @@ def test_fetch_all_stops_on_failure(failure):
     api, db = Mock(spec=PnaoApiClient), Mock(spec=DatabaseClient)
     api.export_zsm_coeur.return_value = [{"id": 1}, {"id": 2}]
     operation = {
-        "schema": db.ensure_schema,
+        "schema": db.ensure_database_requirements,
         "export": api.export_zsm_coeur,
         "insert": db.insert,
     }[failure]
