@@ -2,7 +2,7 @@ API
 ===
 
 Client HTTP
-----------
+-----------
 
 .. automodule:: pnao_client.api
    :members:

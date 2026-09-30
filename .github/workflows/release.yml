@@ -32,8 +32,8 @@ jobs:
 
           tag = os.environ["RELEASE_TAG"]
           version = tomllib.loads(Path("pyproject.toml").read_text())["tool"]["poetry"]["version"]
-          if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag):
-              raise SystemExit("Expected a stable release tag: vX.Y.Z")
+          if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", tag):
+              raise SystemExit("Expected a stable release tag: X.Y.Z")
           if tag != f"v{version}":
               raise SystemExit(f"Tag {tag} does not match package version {version}")
           PYTHON
@@ -43,8 +43,22 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   docs:
+    name: Validate release documentation
     needs: validate
-    uses: ./.github/workflows/docs.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pipx install poetry==2.3.2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: poetry
+      - run: poetry install --only main,docs --no-interaction
+      - run: poetry run sphinx-build -b html -W --keep-going docs/source docs/_build/html
 
   publish:
     name: Publish to PyPI

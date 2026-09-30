@@ -1,9 +1,9 @@
-from importlib.metadata import version
+from importlib.metadata import version as package_version
 
 project = "pnao-client"
 copyright = "2025, lpofredc"
 author = "lpofredc"
-release = version("pnao-client")
+release = package_version("pnao-client")
 
 
 # Configuration file for the Sphinx documentation builder.

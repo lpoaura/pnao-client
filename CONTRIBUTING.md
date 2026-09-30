@@ -35,3 +35,21 @@ Pour vérifier le code sans le modifier (comme en CI) :
 poetry run ruff check .
 poetry run ruff format --check .
 ```
+
+## Intégration continue
+
+- `ci.yml` vérifie Ruff et le verrouillage Poetry, lance les tests sous différentes versions de Python
+  avec un seuil de couverture de 100 %, puis construit et
+  vérifie la wheel et l’archive source. La CLI installée depuis la wheel est
+  testée hors du dépôt. Les rapports et archives sont conservés comme artefacts.
+- `docs.yml` construit Sphinx sans avertissements sur les PR et sur main ; seul
+  un push sur main déploie la documentation sur GitHub Pages.
+- `release.yml` publie sur un tag stable `X.Y.Z`, après validation de la CI et
+  de la documentation. Voir `RELEASE_CHECKLIST.md` pour la configuration initiale.
+
+Pour vérifier la documentation localement :
+
+```bash
+poetry install --with docs
+poetry run sphinx-build -b html -W --keep-going docs/source docs/_build/html
+```
