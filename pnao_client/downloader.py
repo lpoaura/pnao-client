@@ -12,6 +12,7 @@ class PnaoDownloader:
         zsm_coeur = self.api.export_zsm_coeur()
         for area in zsm_coeur:
             self.db.insert("zsm_coeur", area)
-        zsm_tampon = self.api.export_zsm_tampon()
-        for area in zsm_tampon:
-            self.db.insert("zsm_tampon", area)
+        # NOTE : Buffer areas are actually disabled
+        # zsm_tampon = self.api.export_zsm_tampon()
+        # for area in zsm_tampon:
+        #     self.db.insert("zsm_tampon", area)

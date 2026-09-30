@@ -1,5 +1,8 @@
 import logging
-import time, requests
+import time
+
+import requests
+
 from .config import PNAO_BASE_URL
 
 logger = logging.getLogger(__name__)
@@ -13,9 +16,10 @@ class PnaoApiClient:
         self.expires_at = 0
 
     def authenticate(self):
+        json_load = {"username": self.username, "password": self.password}
         r = requests.post(
             f"{PNAO_BASE_URL}/v6/services/webservices/auth/0/",
-            json={"username": self.username, "password": self.password},
+            json=json_load,
         )
         r.raise_for_status()
         data = r.json()
@@ -38,9 +42,11 @@ class PnaoApiClient:
         return r.json()
 
     def export_zsm_coeur(self):
+        """Retrieve ZSM central areas"""
         print("ZSM Coeur")
         return self.get("/v6/services/webservices/data/0/export_zsm_coeur")
 
     def export_zsm_tampon(self):
+        """Retrieve ZSM buffer areas (actually disabled)"""
         print("ZSM Tampon")
         return self.get("/v6/services/webservices/data/0/export_zsm_tampon")

@@ -1,8 +1,9 @@
 import argparse
+
 from .api import PnaoApiClient
+from .config import PNAO_PASSWORD, PNAO_USERNAME
 from .database import DatabaseClient
 from .downloader import PnaoDownloader
-from .config import PNAO_USERNAME, PNAO_PASSWORD
 
 
 def main():
