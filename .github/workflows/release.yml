@@ -60,22 +60,22 @@ jobs:
       - run: poetry install --only main,docs --no-interaction
       - run: poetry run sphinx-build -b html -W --keep-going docs/source docs/_build/html
 
-  publish:
-    name: Publish to PyPI
-    needs: [ci, docs]
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/project/pnao-client/
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: distributions
-          path: dist
-      - name: Publish verified distributions
-        uses: pypa/gh-action-pypi-publish@release/v1
+  # publish:
+  #   name: Publish to PyPI
+  #   needs: [ci, docs]
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/project/pnao-client/
+  #   permissions:
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: distributions
+  #         path: dist
+  #     - name: Publish verified distributions
+  #       uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
     name: Create GitHub Release
