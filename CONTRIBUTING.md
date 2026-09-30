@@ -9,8 +9,14 @@ Merci pour votre intérêt !
 - Tests requis pour toute PR
 
 ## Tests
+
+Les tests unitaires sont dans `tests/`. Ils simulent les appels HTTP et les
+sessions SQLAlchemy : aucun serveur PNAO, PostgreSQL ou fichier `.env` personnel
+n’est nécessaire. Ils couvrent l’authentification, les exports, la persistance,
+la CLI, la configuration et le schéma SQL PostgreSQL généré.
+
 ```bash
-poetry run pytest --cov=pnao_client
+poetry run pytest --cov=pnao_client --cov-branch --cov-report=term-missing
 ```
 
 ## Qualité du code

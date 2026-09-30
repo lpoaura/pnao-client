@@ -1,9 +1,9 @@
 
 # pnao-client
 
-![CI](https://github.com/ORG/pnao-client/actions/workflows/ci.yml/badge.svg)
-![Docs](https://github.com/ORG/pnao-client/actions/workflows/docs.yml/badge.svg)
-![Release](https://github.com/ORG/pnao-client/actions/workflows/release.yml/badge.svg)
+![CI](https://github.com/lpoaura/pnao-client/actions/workflows/ci.yml/badge.svg)
+![Docs](https://github.com/lpoaura/pnao-client/actions/workflows/docs.yml/badge.svg)
+![Release](https://github.com/lpoaura/pnao-client/actions/workflows/release.yml/badge.svg)
 
 Client Python pour l’API **PNAO** avec :
 - CLI `poetry run pnao fetch`
@@ -18,6 +18,13 @@ poetry install
 ```
 
 ## Commande principale
+
+```bash
+poetry run alembic upgrade head
+```
+
+Lancer le téléchargement des données depuis l'API
+
 ```bash
 poetry run pnao fetch
 ```

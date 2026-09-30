@@ -3,6 +3,7 @@
 name = "pnao-client"
 version = "0.1.0"
 description = "Client PNAO for PostgreSQL"
+readme = "README.md"
 authors = ["lpofredc <frederic.cloitre@lpo.fr>"]
 maintainers = ["lpofredc <frederic.cloitre@lpo.fr>"]
 packages = [{ include = "pnao_client" }]

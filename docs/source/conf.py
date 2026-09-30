@@ -1,12 +1,9 @@
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(".."))
+from importlib.metadata import version
 
 project = "pnao-client"
 copyright = "2025, lpofredc"
 author = "lpofredc"
-release = "0.1.0"
+release = version("pnao-client")
 
 
 # Configuration file for the Sphinx documentation builder.
@@ -23,7 +20,7 @@ release = "0.1.0"
 
 extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.autosummary"]
 
-templates_path = ["_templates"]
+templates_path = []
 exclude_patterns = []
 
 
@@ -31,5 +28,5 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+html_static_path = []
 autosummary_generate = True
