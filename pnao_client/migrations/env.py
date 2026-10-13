@@ -1,10 +1,10 @@
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.schema import CreateSchema
 
-from alembic import context
-from pnao_client.config import DATABASE_URL
+from pnao_client.config import DATABASE_URL, DB_SCHEMA
 from pnao_client.models import Base
 
 # this is the Alembic Config object, which provides
@@ -30,10 +30,38 @@ target_metadata = Base.metadata
 
 
 def include_name(name, type_, parent_names) -> bool:
-    """Restrict database reflection to the pnao schema."""
+    """Reflect only model tables in the configured application schema."""
+    default_schema = context.get_context().dialect.default_schema_name
     if type_ == "schema":
-        return name == "pnao"
+        return (name if name is not None else default_schema) == DB_SCHEMA
+    if type_ == "table":
+        schema = parent_names.get("schema_name")
+        schema = schema if schema is not None else default_schema
+        return schema == DB_SCHEMA and any(
+            table.name == name and table.schema == DB_SCHEMA
+            for table in target_metadata.tables.values()
+        )
     return True
+
+
+def include_object(object_, name, type_, reflected, compare_to) -> bool:
+    """Exclude tables outside the configured application schema."""
+    if type_ == "table":
+        return include_name(object_.schema, "schema", {})
+    return True
+
+
+def process_revision_directives(context_, revision, directives) -> None:
+    """Keep generated operations qualified even for the default schema."""
+    def qualify(operation):
+        if hasattr(operation, "schema") and operation.schema is None:
+            operation.schema = DB_SCHEMA
+        for child in getattr(operation, "ops", ()):
+            qualify(child)
+
+    for script in directives:
+        for operations in script.upgrade_ops_list + script.downgrade_ops_list:
+            qualify(operations)
 
 
 def run_migrations_offline() -> None:
@@ -54,13 +82,15 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         include_schemas=True,
         include_name=include_name,
-        version_table_schema="pnao",
+        include_object=include_object,
+        version_table_schema=DB_SCHEMA,
+        process_revision_directives=process_revision_directives,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():
-        context.execute(CreateSchema("pnao", if_not_exists=True))
+        context.execute(CreateSchema(DB_SCHEMA, if_not_exists=True))
         context.run_migrations()
 
 
@@ -83,11 +113,13 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             include_schemas=True,
             include_name=include_name,
-            version_table_schema="pnao",
+            include_object=include_object,
+            version_table_schema=DB_SCHEMA,
+            process_revision_directives=process_revision_directives,
         )
 
         with context.begin_transaction():
-            context.execute(CreateSchema("pnao", if_not_exists=True))
+            context.execute(CreateSchema(DB_SCHEMA, if_not_exists=True))
             context.run_migrations()
 
 

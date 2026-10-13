@@ -28,6 +28,7 @@ sphinx-rtd-theme = "^2.0"
 
 [tool.poetry.scripts]
 pnao = "pnao_client.cli:main"
+fetch = "pnao_client.cli:fetch_main"
 
 [build-system]
 requires = ["poetry-core"]

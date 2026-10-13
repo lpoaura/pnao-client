@@ -30,8 +30,11 @@ editor .env
 Initialisation du schéma d'accueil des données dans la base de données
 
 ```bash
-poetry run alembic upgrade head
+poetry run pnao upgradedb
 ```
+
+Cette commande applique les migrations jusqu'à la dernière version avec
+`DATABASE_URL`.
 
 Si un message d'erreur indique que l'utilisateur doit être superuser pour créer l'extension postgis, vous pouvez soit configurer l'utilisateur postgresql en superuser (non recommandé!), soit créer l'extension avec un compte superuser (recommandé).
 
