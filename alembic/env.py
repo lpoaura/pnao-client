@@ -1,6 +1,7 @@
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.schema import CreateSchema
 
 from alembic import context
 from pnao_client.config import DATABASE_URL
@@ -28,6 +29,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_name(name, type_, parent_names) -> bool:
+    """Restrict database reflection to the pnao schema."""
+    if type_ == "schema":
+        return name == "pnao"
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -44,11 +52,15 @@ def run_migrations_offline() -> None:
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        include_schemas=True,
+        include_name=include_name,
+        version_table_schema="pnao",
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():
+        context.execute(CreateSchema("pnao", if_not_exists=True))
         context.run_migrations()
 
 
@@ -66,9 +78,16 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
+            include_name=include_name,
+            version_table_schema="pnao",
+        )
 
         with context.begin_transaction():
+            context.execute(CreateSchema("pnao", if_not_exists=True))
             context.run_migrations()
 
 

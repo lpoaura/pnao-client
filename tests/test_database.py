@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 from pnao_client import database
-from pnao_client.models import PnaoRawData
 
 
 @pytest.fixture
@@ -33,16 +33,27 @@ def test_insert_persists_payload_and_commits(client, monkeypatch):
     session_factory = MagicMock()
     monkeypatch.setattr(database, "Session", session_factory)
     session = session_factory.return_value.__enter__.return_value
-    payload = {"id": 3, "geometry": {"type": "Point", "coordinates": [1, 2]}}
+    payload = {
+        "id": 3,
+        "code_aire": "aire_3",
+        "geometry": {"type": "Point", "coordinates": [1, 2]},
+    }
 
     client.insert("zsm_coeur", payload)
 
     session_factory.assert_called_once_with(client.engine)
-    record = session.add.call_args.args[0]
-    assert isinstance(record, PnaoRawData)
-    assert record.source == "zsm_coeur"
-    assert record.payload == payload
-    assert [call[0] for call in session.mock_calls] == ["add", "commit"]
+    statement = session.execute.call_args.args[0]
+    compiled = statement.compile(dialect=postgresql.dialect())
+    assert compiled.params == {
+        "source": "zsm_coeur",
+        "payload": payload,
+        "code_aire": payload["code_aire"],
+    }
+    assert (
+        "ON CONFLICT (code_aire) DO UPDATE SET "
+        "source = excluded.source, payload = excluded.payload"
+    ) in str(compiled)
+    assert [call[0] for call in session.mock_calls] == ["execute", "commit"]
     session_factory.return_value.__exit__.assert_called_once_with(None, None, None)
 
 
@@ -54,7 +65,7 @@ def test_commit_failure_propagates_and_closes_session(client, monkeypatch):
     session.commit.side_effect = error
 
     with pytest.raises(RuntimeError, match="commit failed"):
-        client.insert("zsm_coeur", {"id": 1})
+        client.insert("zsm_coeur", {"id": 1, "code_aire": "aire_1"})
 
     exit_args = session_factory.return_value.__exit__.call_args.args
     assert exit_args[0] is RuntimeError
