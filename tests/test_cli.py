@@ -64,7 +64,7 @@ def test_upgradedb_runs_packaged_migrations_from_any_directory(
     cli.main()
     config, revision = upgrade.call_args.args
     assert revision == "head"
-    assert ScriptDirectory.from_config(config).get_current_head() == "eaffb6de0652"
+    assert ScriptDirectory.from_config(config).get_current_head() == "5bd4e261e235"
     assert "Base de données mise à jour" in capsys.readouterr().out
     for service in services:
         service.assert_not_called()
@@ -80,19 +80,12 @@ def test_failed_upgrade_does_not_report_success(monkeypatch, capsys):
     assert "Base de données mise à jour" not in capsys.readouterr().out
 
 
-def test_fetch_entrypoint_runs_import(services, monkeypatch, capsys):
-    monkeypatch.setattr("sys.argv", ["fetch"])
-    cli.fetch_main()
-    services[2].return_value.fetch_all.assert_called_once_with()
-    assert "Import terminé" in capsys.readouterr().out
-
-
 def test_fetch_rejects_upgradedb(services, monkeypatch, capsys):
-    monkeypatch.setattr("sys.argv", ["fetch", "upgradedb"])
+    monkeypatch.setattr("sys.argv", ["pnao", "fetch", "upgradedb"])
     upgrade = Mock()
     monkeypatch.setattr(cli.command, "upgrade", upgrade)
     with pytest.raises(SystemExit) as exc:
-        cli.fetch_main()
+        cli.main()
     assert exc.value.code == 2
     assert "unrecognized arguments: upgradedb" in capsys.readouterr().err
     upgrade.assert_not_called()

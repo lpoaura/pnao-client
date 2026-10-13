@@ -22,7 +22,6 @@ def upgrade_database():
     print("Base de données mise à jour")
 
 
-
 def fetch_data():
     """Importer les exports PNAO dans la base de données."""
     api = PnaoApiClient(PNAO_USERNAME, PNAO_PASSWORD)

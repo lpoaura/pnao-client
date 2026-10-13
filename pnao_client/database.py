@@ -59,7 +59,7 @@ class DatabaseClient:
             set_={
                 "source": statement.excluded.source,
                 "payload": statement.excluded.payload,
-                "updated_at": func.now()
+                "updated_at": func.now(),
             },
         )
         with Session(self.engine) as s:

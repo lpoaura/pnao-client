@@ -53,6 +53,7 @@ def include_object(object_, name, type_, reflected, compare_to) -> bool:
 
 def process_revision_directives(context_, revision, directives) -> None:
     """Keep generated operations qualified even for the default schema."""
+
     def qualify(operation):
         if hasattr(operation, "schema") and operation.schema is None:
             operation.schema = DB_SCHEMA

@@ -36,6 +36,32 @@ poetry run ruff check .
 poetry run ruff format --check .
 ```
 
+## Pre-commit
+
+Installer les dépendances et activer les hooks dans votre clone :
+
+```bash
+poetry install --with dev
+poetry run pre-commit install
+```
+
+À chaque commit, les hooks vérifient le verrouillage Poetry, le lint et le
+formatage Ruff, puis exécutent toute la suite de tests avec la couverture des
+branches et un seuil de 100 %, comme dans `ci.yml`. Ils utilisent les versions
+de l’environnement Poetry et ne modifient pas automatiquement les fichiers.
+Les noms des fichiers indexés ne sont pas transmis aux commandes : les
+vérifications portent sur tout le projet, même pour un commit sans fichier Python.
+
+Pour lancer les mêmes vérifications manuellement :
+
+```bash
+poetry run pre-commit run --all-files
+```
+
+Les tests locaux utilisent la version Python de votre environnement Poetry.
+La matrice Python 3.12–3.14, les builds de distribution et la documentation
+restent vérifiés par les workflows GitHub.
+
 ## Intégration continue
 
 - `ci.yml` vérifie Ruff et le verrouillage Poetry, lance les tests sous différentes versions de Python

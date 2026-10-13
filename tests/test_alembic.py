@@ -7,10 +7,15 @@ from sqlalchemy.dialects import postgresql
 
 
 @pytest.mark.parametrize("offline", [False, True])
-def test_schema_is_created_in_transaction_before_migrations(monkeypatch, offline):
+@pytest.mark.parametrize("config_file", [None, "alembic.ini"])
+def test_schema_is_created_in_transaction_before_migrations(
+    monkeypatch, offline, config_file
+):
     monkeypatch.setattr("pnao_client.config.DB_SCHEMA", "pnao")
     context = MagicMock()
-    context.config.config_file_name = None
+    context.config.config_file_name = config_file
+    file_config = MagicMock()
+    monkeypatch.setattr("logging.config.fileConfig", file_config)
     context.is_offline_mode.return_value = offline
     events = []
     context.begin_transaction.return_value.__enter__.side_effect = lambda: (
@@ -37,6 +42,10 @@ def test_schema_is_created_in_transaction_before_migrations(monkeypatch, offline
         "end",
     ]
     assert context.configure.call_args.kwargs["version_table_schema"] == "pnao"
+    if config_file is None:
+        file_config.assert_not_called()
+    else:
+        file_config.assert_called_once_with(config_file)
 
 
 @pytest.mark.parametrize("upgrade", [True, False])
@@ -92,11 +101,15 @@ def test_autogenerate_recognizes_existing_table_in_default_schema(
     )
     engine = sa.create_engine("sqlite://")
     with engine.connect() as connection:
-        connection.exec_driver_sql("CREATE TABLE raw_data (id INTEGER NOT NULL PRIMARY KEY)")
+        connection.exec_driver_sql(
+            "CREATE TABLE raw_data (id INTEGER NOT NULL PRIMARY KEY)"
+        )
         connection.dialect.default_schema_name = default_schema
         metadata = sa.MetaData()
         sa.Table(
-            "raw_data", metadata, sa.Column("id", sa.Integer, primary_key=True),
+            "raw_data",
+            metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
             schema=default_schema,
         )
         migration_context = MigrationContext.configure(
@@ -141,14 +154,18 @@ def test_autogenerate_ignores_tables_and_models_outside_pnao(monkeypatch, schema
         connection.exec_driver_sql("CREATE TABLE other.raw_data (unrelated TEXT)")
         metadata = sa.MetaData()
         sa.Table(
-            "raw_data", metadata, sa.Column("id", sa.Integer, primary_key=True),
+            "raw_data",
+            metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
             schema=schema,
         )
         # Even models outside pnao must not produce CREATE TABLE operations.
         outside_schemas = ["other"] if schema == "main" else [None, "other"]
         for outside_schema in outside_schemas:
             sa.Table(
-                "new_table", metadata, sa.Column("id", sa.Integer),
+                "new_table",
+                metadata,
+                sa.Column("id", sa.Integer),
                 schema=outside_schema,
             )
         migration_context = MigrationContext.configure(
@@ -162,11 +179,15 @@ def test_autogenerate_ignores_tables_and_models_outside_pnao(monkeypatch, schema
         env["include_name"].__globals__["target_metadata"] = metadata
         context.get_context.return_value = migration_context
         assert compare_metadata(migration_context, metadata) == []
-        metadata.tables[f"{schema}.raw_data"].append_column(sa.Column("test", sa.String(50)))
+        metadata.tables[f"{schema}.raw_data"].append_column(
+            sa.Column("test", sa.String(50))
+        )
         diffs = compare_metadata(migration_context, metadata)
         assert len(diffs) == 1
         assert diffs[0][:3] == (
-            "add_column", None if schema == "main" else schema, "raw_data"
+            "add_column",
+            None if schema == "main" else schema,
+            "raw_data",
         )
         assert diffs[0][3].name == "test"
         from alembic.autogenerate import produce_migrations
@@ -179,7 +200,8 @@ def test_autogenerate_ignores_tables_and_models_outside_pnao(monkeypatch, schema
     engine.dispose()
 
 
-def test_generated_test_revision_only_changes_pnao_raw_data():
+@pytest.mark.parametrize("upgrade", [True, False])
+def test_initial_migration_creates_and_removes_application_table(upgrade):
     import io
 
     from alembic import command
@@ -192,8 +214,25 @@ def test_generated_test_revision_only_changes_pnao_raw_data():
         str(Path(__file__).resolve().parents[1] / "pnao_client/migrations"),
     )
     config.set_main_option("sqlalchemy.url", "postgresql://localhost/test")
-    command.upgrade(config, "5bd4e261e235:eaffb6de0652", sql=True)
+    if upgrade:
+        command.upgrade(config, "0b618d095e8c", sql=True)
+    else:
+        command.downgrade(config, "0b618d095e8c:base", sql=True)
     sql = output.getvalue()
-    assert "ALTER TABLE pnao.raw_data ADD COLUMN test" in sql
-    assert "DROP TABLE" not in sql
+    if upgrade:
+        assert "CREATE TABLE pnao.raw_data" in sql
+        assert "payload JSONB NOT NULL" in sql
+        assert "CREATE UNIQUE INDEX ix_pnao_raw_data_code_aire" in sql
+        assert "CREATE INDEX ix_pnao_raw_data_source" in sql
+        assert "CREATE INDEX ix_raw_data_payload_gin ON pnao.raw_data USING gin" in sql
+        assert "DROP TABLE" not in sql
+    else:
+        assert "DROP TABLE pnao.raw_data" in sql
+        for index in (
+            "ix_pnao_raw_data_code_aire",
+            "ix_pnao_raw_data_source",
+            "ix_raw_data_payload_gin",
+        ):
+            assert f"DROP INDEX pnao.{index}" in sql
+        assert "CREATE TABLE" not in sql
     assert "spatial_ref_sys" not in sql
