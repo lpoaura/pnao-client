@@ -22,12 +22,6 @@ def upgrade_database():
     print("Base de données mise à jour")
 
 
-def fetch_main():
-    """Exécuter la commande d'import ``fetch``."""
-    parser = argparse.ArgumentParser("fetch")
-    parser.parse_args()
-    fetch_data()
-
 
 def fetch_data():
     """Importer les exports PNAO dans la base de données."""

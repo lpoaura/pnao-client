@@ -1,6 +1,6 @@
 """Persistance des exports PNAO dans PostgreSQL via SQLAlchemy."""
 
-from sqlalchemy import create_engine, text,func
+from sqlalchemy import create_engine, func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
