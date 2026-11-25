@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from sqlalchemy import make_url
 from sqlalchemy.dialects import postgresql
 
 from pnao_client import database
@@ -13,8 +14,38 @@ def client(monkeypatch):
     monkeypatch.setattr(database, "create_engine", create_engine)
     monkeypatch.setattr(database, "DATABASE_URL", "postgresql://example/test")
     client = database.DatabaseClient()
-    create_engine.assert_called_once_with("postgresql://example/test")
+    create_engine.assert_called_once_with(
+        make_url("postgresql://example/test"), connect_args={"sslmode": "require"}
+    )
     return client
+
+
+def test_engine_requires_tls_when_url_has_no_sslmode(monkeypatch):
+    engine = MagicMock()
+    create_engine = Mock(return_value=engine)
+    monkeypatch.setattr(database, "create_engine", create_engine)
+    monkeypatch.setattr(database, "DATABASE_URL", "postgresql://example/test")
+
+    database.DatabaseClient()
+
+    create_engine.assert_called_once_with(
+        make_url("postgresql://example/test"), connect_args={"sslmode": "require"}
+    )
+
+
+def test_engine_respects_explicit_sslmode_in_url(monkeypatch):
+    engine = MagicMock()
+    create_engine = Mock(return_value=engine)
+    monkeypatch.setattr(database, "create_engine", create_engine)
+    monkeypatch.setattr(
+        database, "DATABASE_URL", "postgresql://example/test?sslmode=disable"
+    )
+
+    database.DatabaseClient()
+
+    create_engine.assert_called_once_with(
+        make_url("postgresql://example/test?sslmode=disable"), connect_args={}
+    )
 
 
 def test_ensure_database_requirements_uses_transaction(client, monkeypatch):

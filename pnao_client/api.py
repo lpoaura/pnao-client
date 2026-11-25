@@ -1,5 +1,6 @@
 """Accès HTTP aux exports PNAO avec gestion du jeton d'authentification."""
 
+import json
 import logging
 import time
 
@@ -8,6 +9,13 @@ import requests
 from .config import PNAO_BASE_URL
 
 logger = logging.getLogger(__name__)
+
+# Délai (connexion, lecture) en secondes : un serveur qui ne répond pas ne
+# doit pas bloquer le client indéfiniment.
+HTTP_TIMEOUT = (5, 30)
+# Taille maximale d'un corps de réponse accepté (100 Mio) : protection contre
+# une réponse anormalement volumineuse qui saturerait la mémoire.
+MAX_RESPONSE_BYTES = 100 * 1024 * 1024
 
 
 class PnaoApiClient:
@@ -34,6 +42,42 @@ class PnaoApiClient:
         self.token = None
         self.expires_at = 0
 
+    def close(self):
+        """Effacer les identifiants et le jeton conservés en mémoire.
+
+        :returns: ``None``. Remplace les secrets par ``None``.
+        """
+        self.username = None
+        self.password = None
+        self.token = None
+        self.expires_at = 0
+
+    def __del__(self):
+        self.close()
+
+    @staticmethod
+    def _decode_json(response):
+        """Décoder le corps JSON d'une réponse en limitant la taille lue.
+
+        Le corps est lu par morceaux via ``iter_content`` et la lecture
+        est interrompue dès que :data:`MAX_RESPONSE_BYTES` est dépassé.
+
+        :param response: Réponse ``requests`` ouverte en ``stream=True``.
+        :returns: Contenu JSON décodé.
+        :raises ValueError: Si le corps dépasse :data:`MAX_RESPONSE_BYTES`.
+        :raises json.JSONDecodeError: Si le corps n'est pas un JSON valide.
+        """
+        chunks = []
+        total = 0
+        for chunk in response.iter_content(chunk_size=65536):
+            total += len(chunk)
+            if total > MAX_RESPONSE_BYTES:
+                raise ValueError(
+                    f"Réponse trop volumineuse : plus de {MAX_RESPONSE_BYTES} octets"
+                )
+            chunks.append(chunk)
+        return json.loads(b"".join(chunks))
+
     def authenticate(self):
         """Obtenir un jeton et mettre à jour sa date d'expiration.
 
@@ -45,17 +89,22 @@ class PnaoApiClient:
         :raises requests.exceptions.HTTPError: Si le serveur renvoie une erreur
             HTTP.
         :raises requests.exceptions.ConnectionError: Si la connexion échoue.
-        :raises requests.exceptions.JSONDecodeError: Si la réponse n'est pas un
-            document JSON valide.
+        :raises requests.exceptions.Timeout: Si le délai :data:`HTTP_TIMEOUT`
+            est dépassé.
+        :raises json.JSONDecodeError: Si la réponse n'est pas un document JSON
+            valide.
+        :raises ValueError: Si la réponse dépasse :data:`MAX_RESPONSE_BYTES`.
         :raises KeyError: Si la réponse ne contient pas de champ ``token``.
         """
         json_load = {"username": self.username, "password": self.password}
         r = requests.post(
             f"{PNAO_BASE_URL}/v6/services/webservices/auth/0/",
             json=json_load,
+            timeout=HTTP_TIMEOUT,
+            stream=True,
         )
         r.raise_for_status()
-        data = r.json()
+        data = self._decode_json(r)
         self.token = data["token"]
         self.expires_at = time.time() + data.get("expires", 3600)
 
@@ -85,17 +134,22 @@ class PnaoApiClient:
         :raises requests.exceptions.HTTPError: Si le serveur renvoie une erreur
             HTTP.
         :raises requests.exceptions.ConnectionError: Si la connexion échoue.
-        :raises requests.exceptions.JSONDecodeError: Si la réponse n'est pas un
-            document JSON valide.
+        :raises requests.exceptions.Timeout: Si le délai :data:`HTTP_TIMEOUT`
+            est dépassé.
+        :raises json.JSONDecodeError: Si la réponse n'est pas un document JSON
+            valide.
+        :raises ValueError: Si la réponse dépasse :data:`MAX_RESPONSE_BYTES`.
         """
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
         url = f"{PNAO_BASE_URL}{endpoint}"
-        print("Calling URL:", url)
-        r = requests.get(url, headers=self._headers())
-        print("Status:", r.status_code)
+        logger.debug("Calling URL: %s", url)
+        r = requests.get(
+            url, headers=self._headers(), timeout=HTTP_TIMEOUT, stream=True
+        )
+        logger.debug("Status: %s", r.status_code)
         r.raise_for_status()
-        return r.json()
+        return self._decode_json(r)
 
     def export_zsm_coeur(self):
         """Récupérer l'export des zones de sensibilité majeure (ZSM) cœur.
@@ -104,7 +158,7 @@ class PnaoApiClient:
 
         Les erreurs de :meth:`get` sont propagées à l'appelant.
         """
-        print("ZSM Coeur")
+        logger.debug("ZSM Coeur")
         return self.get("/v6/services/webservices/data/0/export_zsm_coeur")
 
     def export_zsm_tampon(self):
@@ -118,5 +172,5 @@ class PnaoApiClient:
 
         Les erreurs de :meth:`get` sont propagées à l'appelant.
         """
-        print("ZSM Tampon")
+        logger.debug("ZSM Tampon")
         return self.get("/v6/services/webservices/data/0/export_zsm_tampon")

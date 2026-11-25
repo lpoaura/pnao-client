@@ -1,6 +1,6 @@
 """Persistance des exports PNAO dans PostgreSQL via SQLAlchemy."""
 
-from sqlalchemy import create_engine, func, text
+from sqlalchemy import create_engine, func, make_url, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -20,9 +20,18 @@ class DatabaseClient:
     def __init__(self):
         """Créer le moteur à partir de ``DATABASE_URL`` sans ouvrir de connexion.
 
+        Si l'URL ne précise pas ``sslmode``, la connexion exige TLS
+        (``sslmode=require``) afin que le mot de passe ne transite jamais
+        en clair. Un ``sslmode`` explicite dans l'URL (ex. ``disable`` pour
+        un développement local sans TLS) est respecté.
+
         Les erreurs de configuration de SQLAlchemy sont propagées à l'appelant.
         """
-        self.engine = create_engine(DATABASE_URL)
+        url = make_url(DATABASE_URL)
+        connect_args = {}
+        if "sslmode" not in url.query:
+            connect_args["sslmode"] = "require"
+        self.engine = create_engine(url, connect_args=connect_args)
 
     def ensure_database_requirements(self):
         """Créer le schéma de destination et activer PostGIS s'ils sont absents.
